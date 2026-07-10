@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recordatorio de Citas · WhatsApp</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </span>
+      <div>
+        <h1>Recordatorio de Citas</h1>
+        <p>Envío automatizado por WhatsApp · ESSALUD</p>
+      </div>
+    </div>
+    <div id="statusBadge" class="badge badge--wait">
+      <span class="dot"></span><span id="statusText">Conectando…</span>
+    </div>
+  </header>
+
+  <main class="grid">
+    <!-- ── Columna izquierda: conexión ─────────────────────────── -->
+    <section class="card" id="cardConexion">
+      <h2>1 · Conectar WhatsApp</h2>
+
+      <div id="qrWrap" class="qr-wrap">
+        <div class="qr-placeholder" id="qrPlaceholder">
+          <span class="spinner"></span>
+          <p>Generando código QR…</p>
+        </div>
+        <img id="qrImg" class="qr-img hidden" alt="Código QR de WhatsApp" />
+      </div>
+
+      <div id="qrHelp" class="qr-help">
+        <p>Abre <strong>WhatsApp</strong> en tu teléfono:</p>
+        <ol>
+          <li>Menú <strong>⋮</strong> → <strong>Dispositivos vinculados</strong></li>
+          <li>Toca <strong>Vincular un dispositivo</strong></li>
+          <li>Escanea el código de la izquierda</li>
+        </ol>
+      </div>
+
+      <div id="conectadoBox" class="ok-box hidden">
+        <span class="ok-check">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </span>
+        <p><strong>WhatsApp conectado</strong><br />Ya puedes enviar los recordatorios.</p>
+      </div>
+    </section>
+
+    <!-- ── Columna derecha: CSV + envío ────────────────────────── -->
+    <section class="card" id="cardEnvio">
+      <h2>2 · Cargar pacientes (CSV)</h2>
+
+      <div id="dropZone" class="drop">
+        <input type="file" id="fileInput" accept=".csv" hidden />
+        <span class="drop-icon">
+          <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </span>
+        <p><strong>Arrastra tu CSV aquí</strong> o <span class="link">haz clic para elegirlo</span></p>
+        <small>Columnas: hospital, paciente, especialidad, consultorio, lugar, fecha, hora, telefono</small>
+        <a id="descargarPlantilla" class="tpl-link" href="#">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Descargar plantilla de ejemplo
+        </a>
+      </div>
+
+      <div id="statsRow" class="stats hidden">
+        <div class="stat"><span id="statTotal">0</span><small>Cargados</small></div>
+        <div class="stat stat--ok"><span id="statOk">0</span><small>Enviados</small></div>
+        <div class="stat stat--fail"><span id="statFail">0</span><small>Fallidos</small></div>
+      </div>
+
+      <div id="previewWrap" class="preview hidden">
+        <div class="preview-head">
+          <h3>Vista previa</h3>
+          <button id="btnVerMensaje" class="btn-ghost" type="button">Ver mensaje</button>
+        </div>
+        <div class="table-scroll">
+          <table id="tablaPacientes">
+            <thead>
+              <tr><th>#</th><th>Paciente</th><th>Especialidad</th><th>Fecha</th><th>Hora</th><th>Teléfono</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <button id="btnEnviar" class="btn-primary" disabled>
+        Enviar recordatorios
+      </button>
+      <p id="hintEnvio" class="hint">Carga un CSV y conecta WhatsApp para habilitar el envío.</p>
+    </section>
+  </main>
+
+  <!-- ── Log de progreso ────────────────────────────────────────── -->
+  <section class="card log-card hidden" id="cardLog">
+    <div class="preview-head">
+      <h2>Progreso del envío</h2>
+      <div id="progressPct" class="pct">0%</div>
+    </div>
+    <div class="progress"><div id="progressBar" class="progress-fill"></div></div>
+    <div id="log" class="log"></div>
+  </section>
+
+  <!-- ── Modal: mensaje generado ────────────────────────────────── -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>Mensaje que se enviará</h3>
+        <button id="cerrarModal" class="modal-x">✕</button>
+      </div>
+      <pre id="modalMsg" class="msg-preview"></pre>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
