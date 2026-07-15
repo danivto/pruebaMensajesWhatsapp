@@ -23,6 +23,7 @@ const qrImg = $("qrImg");
 const qrPlaceholder = $("qrPlaceholder");
 const qrHelp = $("qrHelp");
 const conectadoBox = $("conectadoBox");
+const btnDesvincular = $("btnDesvincular");
 const dropZone = $("dropZone");
 const fileInput = $("fileInput");
 const statsRow = $("statsRow");
@@ -45,6 +46,7 @@ socket.on("estado", ({ estado, qr }) => {
     qrPlaceholder.classList.add("hidden");
     qrHelp.classList.add("hidden");
     conectadoBox.classList.remove("hidden");
+    btnDesvincular.classList.remove("hidden");
   } else if (estado === "qr" && qr) {
     whatsappListo = false;
     statusBadge.className = "badge badge--wait";
@@ -54,14 +56,37 @@ socket.on("estado", ({ estado, qr }) => {
     qrPlaceholder.classList.add("hidden");
     qrHelp.classList.remove("hidden");
     conectadoBox.classList.add("hidden");
+    btnDesvincular.classList.add("hidden");
   } else {
     whatsappListo = false;
     statusBadge.className = "badge badge--wait";
     statusText.textContent = estado === "cerrado" ? "Reconectando…" : "Conectando…";
     qrPlaceholder.classList.remove("hidden");
     qrImg.classList.add("hidden");
+    conectadoBox.classList.add("hidden");
+    btnDesvincular.classList.add("hidden");
   }
   actualizarBotonEnviar();
+});
+
+// ── Desvincular dispositivo ───────────────────────────────────────────────────
+btnDesvincular.addEventListener("click", async () => {
+  if (!confirm("¿Desvincular este dispositivo? Se cerrará la sesión y tendrás que escanear un nuevo QR.")) return;
+
+  const label = $("btnDesvincularLabel");
+  btnDesvincular.disabled = true;
+  label.textContent = "Desvinculando…";
+  try {
+    const r = await fetch("/desvincular", { method: "POST" });
+    const data = await r.json();
+    if (!r.ok) alert(data.error || "No se pudo desvincular.");
+    // El nuevo estado (QR) llegará por WebSocket automáticamente.
+  } catch (err) {
+    alert("Error de conexión: " + err.message);
+  } finally {
+    btnDesvincular.disabled = false;
+    label.textContent = "Desvincular dispositivo";
+  }
 });
 
 // ── 2. Carga de CSV ───────────────────────────────────────────────────────────

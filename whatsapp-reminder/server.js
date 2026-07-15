@@ -10,6 +10,7 @@
 
 require("dotenv").config();
 
+const fs = require("fs");
 const path = require("path");
 const http = require("http");
 const express = require("express");
@@ -106,6 +107,36 @@ io.on("connection", (client) => {
 app.post("/preview", (req, res) => {
   const p = req.body.paciente || {};
   res.json({ mensaje: construirMensaje(p) });
+});
+
+// ── Endpoint: desvincular dispositivo ────────────────────────────────────────
+// Cierra la sesión de WhatsApp, borra las credenciales guardadas y reinicia la
+// conexión para que se genere un QR nuevo (permite vincular otro teléfono).
+app.post("/desvincular", async (req, res) => {
+  try {
+    if (sock) {
+      // logout() avisa a WhatsApp para quitar este dispositivo de la lista.
+      try {
+        await sock.logout();
+      } catch (_) {
+        /* si ya estaba caído, seguimos igual */
+      }
+    }
+
+    // Borra la carpeta de sesión para forzar un QR nuevo.
+    fs.rmSync(path.join(__dirname, CARPETA_AUTH), { recursive: true, force: true });
+
+    estado = "conectando";
+    ultimoQR = null;
+    emitirEstado();
+
+    console.log("🔌 Dispositivo desvinculado. Generando nuevo QR...");
+    iniciarWhatsApp(); // reconecta desde cero → nuevo QR
+
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ── Endpoint: enviar recordatorios ────────────────────────────────────────────
